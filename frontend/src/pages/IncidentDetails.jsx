@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import SeverityBadge from "@/components/shared/SeverityBadge";
 import StatusBadge from "@/components/shared/StatusBadge";
 import LoadingState from "@/components/shared/LoadingState";
+import { getIncident, updateIncidentStatus } from "@/services/api";
 
 export default function IncidentDetails() {
   const { id } = useParams();
@@ -17,71 +18,36 @@ export default function IncidentDetails() {
 
   const handleAction = async (action) => {
     try {
-      console.log(`${action} clicked for incident ${id}`);
+      const updatedIncident = await updateIncidentStatus(id, action);
 
-      alert(`${action} action triggered successfully`);
+      if (updatedIncident) {
+        setIncident(updatedIncident);
+      }
     } catch (error) {
       console.error(error);
     }
   };
 
   useEffect(() => {
-    // Mock data - replace with real API later
-    setTimeout(() => {
-      setIncident({
-        id: id,
-        title: "CPU Exhaustion on payment-api",
-        severity: "Critical",
-        status: "open",
-        service: "payment-api",
-        owner: "John Oncall",
-        createdAt: new Date().toISOString(),
-        description: "CPU usage at 98% for 15 minutes",
-        classificationReason: "CPU metric exceeded critical threshold",
+    let mounted = true;
 
-        timeline: [
-          { time: "14:30:05", action: "Alert received", user: "System" },
-          {
-            time: "14:30:06",
-            action: "Classified as Critical",
-            user: "Classifier",
-          },
-          {
-            time: "14:30:07",
-            action: "Slack notification sent",
-            user: "System",
-          },
-          {
-            time: "14:32:15",
-            action: "Incident acknowledged",
-            user: "John Oncall",
-          },
-        ],
+    setLoading(true);
 
-        escalationHistory: [
-          {
-            level: 1,
-            role: "Primary On-call",
-            person: "John Oncall",
-            status: "No response",
-          },
-          {
-            level: 2,
-            role: "Senior Engineer",
-            person: "Sarah Chen",
-            status: "Acknowledged",
-          },
-          {
-            level: 3,
-            role: "Engineering Manager",
-            person: "Mike Johnson",
-            status: "Pending",
-          },
-        ],
+    getIncident(id)
+      .then((payload) => {
+        if (mounted) {
+          setIncident(payload);
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
       });
 
-      setLoading(false);
-    }, 500);
+    return () => {
+      mounted = false;
+    };
   }, [id]);
 
   if (loading) return <LoadingState />;
