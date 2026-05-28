@@ -1,0 +1,128 @@
+{
+  "stats": {
+    "activeIncidents": 18,
+    "criticalIncidents": 4,
+    "mttrMinutes": 41,
+    "automationRate": 68.4,
+    "eventsPerMinute": 1240,
+    "slaCompliance": 96.8
+  },
+  "incidents": [
+    {
+      "id": "INC-1048",
+      "title": "Payment API latency breaching SLO",
+      "service": "payments-api",
+      "severity": "Critical",
+      "status": "Investigating",
+      "owner": "Platform On-call",
+      "region": "us-east-1",
+      "createdAt": "2026-05-28T06:48:00Z",
+      "updatedAt": "2026-05-28T07:14:00Z",
+      "signals": 1842,
+      "description": "P95 latency crossed 1.8s after queue depth increased across checkout traffic."
+    },
+    {
+      "id": "INC-1047",
+      "title": "Kafka consumer lag spike",
+      "service": "event-ingestion",
+      "severity": "High",
+      "status": "Open",
+      "owner": "Data Reliability",
+      "region": "ap-south-1",
+      "createdAt": "2026-05-28T06:22:00Z",
+      "updatedAt": "2026-05-28T07:08:00Z",
+      "signals": 963,
+      "description": "Consumer group incident-classifier is 1.2M messages behind expected processing rate."
+    },
+    {
+      "id": "INC-1046",
+      "title": "Notification provider delivery failures",
+      "service": "notifier",
+      "severity": "High",
+      "status": "Mitigated",
+      "owner": "Communications",
+      "region": "eu-west-1",
+      "createdAt": "2026-05-28T05:59:00Z",
+      "updatedAt": "2026-05-28T06:50:00Z",
+      "signals": 512,
+      "description": "SMS provider returned elevated 5xx responses; fallback provider has been activated."
+    },
+    {
+      "id": "INC-1045",
+      "title": "Classifier confidence degradation",
+      "service": "classifier",
+      "severity": "Medium",
+      "status": "Investigating",
+      "owner": "AIOps",
+      "region": "global",
+      "createdAt": "2026-05-28T05:35:00Z",
+      "updatedAt": "2026-05-28T06:39:00Z",
+      "signals": 287,
+      "description": "Model confidence dropped below 82% for security alert classification."
+    },
+    {
+      "id": "INC-1044",
+      "title": "Escalation policy retry backlog",
+      "service": "escalation-engine",
+      "severity": "Medium",
+      "status": "Open",
+      "owner": "Incident Ops",
+      "region": "us-west-2",
+      "createdAt": "2026-05-28T04:41:00Z",
+      "updatedAt": "2026-05-28T06:13:00Z",
+      "signals": 226,
+      "description": "Retry queue is above baseline after downstream calendar sync failures."
+    },
+    {
+      "id": "INC-1043",
+      "title": "Database replica sync delay",
+      "service": "incident-store",
+      "severity": "Low",
+      "status": "Resolved",
+      "owner": "Storage",
+      "region": "us-east-1",
+      "createdAt": "2026-05-28T03:18:00Z",
+      "updatedAt": "2026-05-28T04:02:00Z",
+      "signals": 97,
+      "description": "Read replica lag briefly exceeded 22 seconds during backup compaction."
+    }
+  ],
+  "analytics": {
+    "trend": [
+      { "time": "00:00", "critical": 2, "high": 6, "medium": 9, "low": 8 },
+      { "time": "03:00", "critical": 1, "high": 5, "medium": 11, "low": 10 },
+      { "time": "06:00", "critical": 4, "high": 9, "medium": 13, "low": 7 },
+      { "time": "09:00", "critical": 3, "high": 8, "medium": 12, "low": 9 },
+      { "time": "12:00", "critical": 5, "high": 11, "medium": 15, "low": 12 },
+      { "time": "15:00", "critical": 4, "high": 10, "medium": 14, "low": 13 },
+      { "time": "18:00", "critical": 3, "high": 8, "medium": 12, "low": 11 },
+      { "time": "21:00", "critical": 2, "high": 7, "medium": 10, "low": 8 }
+    ],
+    "severityDistribution": [
+      { "name": "Critical", "value": 4 },
+      { "name": "High", "value": 7 },
+      { "name": "Medium", "value": 12 },
+      { "name": "Low", "value": 16 }
+    ],
+    "responseTimes": [
+      { "service": "payments", "detect": 3.2, "ack": 5.4, "resolve": 38 },
+      { "service": "ingestion", "detect": 4.1, "ack": 8.1, "resolve": 47 },
+      { "service": "notifier", "detect": 2.6, "ack": 4.8, "resolve": 33 },
+      { "service": "classifier", "detect": 5.8, "ack": 10.4, "resolve": 58 },
+      { "service": "storage", "detect": 3.7, "ack": 6.3, "resolve": 42 }
+    ],
+    "timeline": [
+      { "time": "07:14", "event": "Runbook attached to INC-1048", "type": "automation" },
+      { "time": "07:08", "event": "Escalated INC-1047 to Data Reliability", "type": "escalation" },
+      { "time": "06:50", "event": "Fallback notification provider activated", "type": "mitigation" },
+      { "time": "06:39", "event": "Classifier drift detected", "type": "detection" }
+    ],
+    "serviceHealth": [
+      { "service": "payments-api", "health": 72, "events": 1842, "slo": 94.1 },
+      { "service": "event-ingestion", "health": 81, "events": 963, "slo": 96.6 },
+      { "service": "notifier", "health": 89, "events": 512, "slo": 97.8 },
+      { "service": "classifier", "health": 77, "events": 287, "slo": 95.2 },
+      { "service": "incident-store", "health": 93, "events": 97, "slo": 99.1 }
+    ]
+  }
+}
