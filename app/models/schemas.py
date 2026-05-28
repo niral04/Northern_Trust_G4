@@ -1,6 +1,8 @@
-from pydantic import BaseModel
 from enum import Enum
 from typing import Optional
+
+from pydantic import BaseModel
+
 
 class Severity(str, Enum):
     low = "LOW"
@@ -8,9 +10,11 @@ class Severity(str, Enum):
     high = "HIGH"
     critical = "CRITICAL"
 
+
 class AlertType(str, Enum):
     infra = "INFRA"
     app = "APP"
+
 
 class IncidentState(str, Enum):
     open = "OPEN"
@@ -18,12 +22,17 @@ class IncidentState(str, Enum):
     escalated = "ESCALATED"
     resolved = "RESOLVED"
 
+
 class AlertCreate(BaseModel):
     source: str
     type: AlertType
     severity: Severity
     message: str
+    service: Optional[str] = None
+    metric: Optional[str] = None
+    value: Optional[str] = None
+
 
 class IncidentAction(BaseModel):
-    actor: str
+    actor: str = "Dashboard User"
     note: Optional[str] = None

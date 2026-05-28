@@ -177,6 +177,37 @@ export default function IncidentDetails() {
         </CardContent>
       </Card>
 
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Workflow Routing & Automation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="rounded-lg bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground">Priority</p>
+              <p className="mt-1 font-semibold">{incident.priority}</p>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground">Workflow</p>
+              <p className="mt-1 font-semibold">{incident.workflowPath}</p>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground">Notify Via</p>
+              <p className="mt-1 font-semibold">{incident.notificationChannel}</p>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground">SLA</p>
+              <p className="mt-1 font-semibold">{incident.slaMinutes} minutes</p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-lg border border-border p-4">
+            <p className="text-xs text-muted-foreground">Automated remediation / runbook</p>
+            <p className="mt-1 text-sm">{incident.remediationAction}</p>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="border-b">
         <div className="flex gap-4">
           <button
@@ -199,6 +230,17 @@ export default function IncidentDetails() {
             }`}
           >
             ⬆️ Escalation History
+          </button>
+
+          <button
+            onClick={() => setActiveTab("notifications")}
+            className={`pb-3 text-sm font-medium ${
+              activeTab === "notifications"
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground"
+            }`}
+          >
+            📣 Notifications
           </button>
         </div>
       </div>
@@ -277,6 +319,31 @@ export default function IncidentDetails() {
           </CardContent>
         </Card>
       )}
+
+      {activeTab === "notifications" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Log</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(incident.notifications ?? []).length === 0 && (
+                <p className="text-sm text-muted-foreground">No notifications recorded yet.</p>
+              )}
+              {(incident.notifications ?? []).map((notification) => (
+                <div key={notification.id} className="rounded-lg bg-muted/30 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium">{notification.channel} → {notification.recipient}</p>
+                    <span className="text-xs text-muted-foreground">{notification.status}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{notification.message}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
     </div>
   );
 }

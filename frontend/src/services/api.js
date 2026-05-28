@@ -38,6 +38,27 @@ function formatTime(value) {
   });
 }
 
+
+function normalizeTimeline(events = []) {
+  return events.map((event) => ({
+    time: formatTime(event.created_at ?? event.time),
+    action: event.action ?? event.description ?? event.event_type ?? "Workflow event",
+    user: event.user ?? event.actor ?? "System",
+    stage: event.stage ?? event.type ?? "workflow",
+  }));
+}
+
+function normalizeNotifications(notifications = []) {
+  return notifications.map((notification) => ({
+    id: notification.id,
+    channel: notification.channel,
+    recipient: notification.recipient,
+    status: notification.status,
+    message: notification.message,
+    createdAt: notification.created_at,
+  }));
+}
+
 function emptySeverityDistribution() {
   return SEVERITIES.map((name) => ({ name, value: 0 }));
 }
@@ -66,13 +87,20 @@ function normalizeIncident(raw) {
     createdAt,
     updatedAt,
     signals: toNumber(raw.signals ?? raw.escalation_level, 0),
+    priority: raw.priority ?? "P3",
+    workflowPath: raw.workflow_path ?? raw.workflowPath ?? "manual_triage",
+    notificationChannel: raw.notification_channel ?? raw.notificationChannel ?? "Email",
+    remediationAction: raw.remediation_action ?? raw.remediationAction ?? "Manual investigation",
+    slaMinutes: toNumber(raw.sla_minutes ?? raw.slaMinutes, 60),
     description,
     classificationReason:
       raw.classificationReason ??
       raw.workflow_path ??
       raw.priority ??
       `${severity} ${titleCase(raw.alert_type, "alert")} routed to ${raw.assignee ?? "on-call"}`,
-    timeline: raw.timeline ?? buildTimeline(raw, status, createdAt, updatedAt),
+    timeline: Array.isArray(raw.timeline) && raw.timeline.length ? normalizeTimeline(raw.timeline) : buildTimeline(raw, status, createdAt, updatedAt),
+    notifications: normalizeNotifications(raw.notifications ?? []),
+    postmortem: raw.postmortem,
     escalationHistory: raw.escalationHistory ?? buildEscalationHistory(raw),
   };
 }
@@ -329,6 +357,23 @@ export async function updateIncidentStatus(id, action) {
   });
 
   return normalizeIncident(payload?.incident ?? payload);
+}
+
+export async function createAlert(alert) {
+  const payload = await request("/alerts/", null, {
+    method: "POST",
+    body: JSON.stringify(alert),
+  });
+
+  return normalizeIncident(payload?.incident);
+}
+
+export async function simulateAlerts() {
+  const payload = await request("/alerts/simulate", { incidents: mockData.incidents }, {
+    method: "POST",
+  });
+
+  return normalizeIncidents(payload);
 }
 
 export async function getDashboardData() {
