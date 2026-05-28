@@ -93,6 +93,7 @@ def incident_to_dict(incident):
         "acknowledged_at":   str(incident.acknowledged_at) if incident.acknowledged_at else None,
         "resolved_at":       str(incident.resolved_at) if incident.resolved_at else None,
         "mttr_minutes":      incident.mttr_minutes
+        
     }
 @router.get("/api/incidents/{incident_id}/postmortem")
 def get_postmortem(incident_id: str, db: Session = Depends(get_db)):

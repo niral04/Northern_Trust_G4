@@ -3,7 +3,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from database import get_db
+from database import get_db, SessionLocal          # ← ADD SessionLocal here
 from models import Alert
 from classifer import classify_alert
 import incident_engine
@@ -47,15 +47,23 @@ def ingest_alert(alert_input: AlertInput, db: Session = Depends(get_db)):
     # Create incident
     incident = incident_engine.create_incident(db, alert, classification)
 
+    # ← ADD THIS: trigger auto-remediation in background thread
+    action = incident_engine.attempt_remediation(
+        incident.incident_id,
+        alert_input.metric,
+        SessionLocal
+    )
+
     # Mark alert processed
     alert.processed = "true"
     db.commit()
 
     return {
-        "status": "incident_created",
+        "status":      "incident_created",
         "incident_id": incident.incident_id,
-        "severity": incident.severity,
-        "assignee": incident.assignee
+        "severity":    incident.severity,
+        "assignee":    incident.assignee,
+        "remediation": action if action else "no_action_available"   # ← ADD this line
     }
 
 @router.get("/api/alerts")

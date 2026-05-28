@@ -6,6 +6,9 @@ from websocket_manager import manager
 import asyncio
 import random
 
+import time
+import threading
+
 ESCALATION_CHAIN = {
     "infrastructure": {
         "critical": ["John (On-Call)", "Sarah (Senior Eng)", "Mike (Team Lead)", "Director + All"],
@@ -164,3 +167,93 @@ SLA Status:  {'✅ Within SLA' if incident.mttr_minutes and incident.mttr_minute
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
     return report
+
+
+
+
+# Maps each metric to a remediation action name
+AUTO_REMEDIATION_MAP = {
+    "server_status":    "restart_server",
+    "cpu_usage":        "kill_high_cpu_processes",
+    "disk_usage":       "clear_disk_space",
+    "error_rate":       "restart_application_service",
+    "packet_loss":      "reset_network_interface",
+    "response_time":    "restart_application_service",
+    "job_failure_rate": "restart_job_scheduler",
+}
+
+# How long (seconds) to simulate the fix taking
+REMEDIATION_DURATION = {
+    "restart_server":              8,
+    "kill_high_cpu_processes":     5,
+    "clear_disk_space":            6,
+    "restart_application_service": 7,
+    "reset_network_interface":     9,
+    "restart_job_scheduler":       6,
+}
+
+# 70 % success rate for demo realism
+SUCCESS_RATE = 0.40
+
+
+def _do_remediation(incident_id: str, action: str, db_factory):
+    """
+    Runs in a background thread.
+    db_factory is a callable that returns a fresh DB session (use SessionLocal).
+    """
+    db = db_factory()
+    try:
+        duration = REMEDIATION_DURATION.get(action, 6)
+
+        # Log: remediation started
+        add_timeline_event(
+            db, incident_id,
+            "REMEDIATION_STARTED",
+            f"Auto-remediation triggered: {action} — attempting fix..."
+        )
+
+        time.sleep(duration)      # simulate the fix running
+
+        success = random.random() < SUCCESS_RATE
+
+        if success:
+            add_timeline_event(
+                db, incident_id,
+                "REMEDIATION_SUCCESS",
+                f"Auto-remediation successful: {action} completed — service restored"
+            )
+            resolve_incident(
+                db, incident_id,
+                notes=f"Auto-resolved by remediation engine via action: {action}"
+            )
+        else:
+            add_timeline_event(
+                db, incident_id,
+                "REMEDIATION_FAILED",
+                f"Auto-remediation failed: {action} unsuccessful — escalating to engineer"
+            )
+            escalate_incident(
+                db, incident_id,
+                reason=f"Auto-remediation ({action}) failed — manual intervention required"
+            )
+    finally:
+        db.close()
+
+
+def attempt_remediation(incident_id: str, metric: str, db_factory):
+    """
+    Call this right after create_incident().
+    Looks up the right action for the metric and starts a background thread.
+    Returns the action name if triggered, or None.
+    """
+    action = AUTO_REMEDIATION_MAP.get(metric)
+    if not action:
+        return None
+
+    thread = threading.Thread(
+        target=_do_remediation,
+        args=(incident_id, action, db_factory),
+        daemon=True
+    )
+    thread.start()
+    return action
