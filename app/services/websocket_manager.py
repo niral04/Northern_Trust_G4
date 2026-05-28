@@ -29,5 +29,22 @@ class ConnectionManager:
 
             await connection.send_json(message)
 
+    async def broadcast_event(self, event: str, payload: dict | None = None):
+        """Structured event envelope for enterprise real-time updates."""
+        message = {"event": event}
+        if payload:
+            message.update(payload)
+        await self.broadcast(message)
+
+    def schedule_broadcast(self, event: str, payload: dict | None = None):
+        import asyncio
+
+        message = {"event": event, **(payload or {})}
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.broadcast_event(event, payload))
+        except RuntimeError:
+            asyncio.run(self.broadcast_event(event, payload))
+
 
 manager = ConnectionManager()

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import IncidentCard from "@/components/dashboard/IncidentCard";
 
-export default function IncidentFeed({ incidents }) {
+export default function IncidentFeed({ incidents, onIncidentPatch }) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -21,13 +21,10 @@ export default function IncidentFeed({ incidents }) {
 
       <CardContent className="space-y-3">
         {incidents.map((incident) => (
-          <Link
-            key={incident.id}
-            to={`/incidents/${incident.id}`}
-            className="block"
-          >
-            <IncidentCard incident={incident} />
-          </Link>
+          <IncidentCard
+            key={incident.incident_id ?? incident.id}
+            incident={incident}
+          />
         ))}
       </CardContent>
     </Card>

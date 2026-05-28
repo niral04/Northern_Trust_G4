@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Search, Filter, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import IncidentCard from "@/components/dashboard/IncidentCard";
 import LoadingState from "@/components/shared/LoadingState";
 import PageHeader from "@/components/shared/PageHeader";
 import { getIncidents } from "@/services/api";
+import { useIncidentWebSocket } from "@/hooks/useIncidentWebSocket";
 
 export default function Incidents() {
   const [incidents, setIncidents] = useState([]);
@@ -17,10 +18,6 @@ export default function Incidents() {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    loadIncidents();
-  }, []);
-
   const loadIncidents = async () => {
     setLoading(true);
     const data = await getIncidents();
@@ -28,29 +25,72 @@ export default function Incidents() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    loadIncidents();
+  }, []);
+
+  const patchIncident = useCallback((incidentId, patch) => {
+    setIncidents((current) =>
+      current.map((incident) =>
+        (incident.id === incidentId || incident.incident_id === incidentId)
+          ? { ...incident, ...patch, status: patch.status ?? incident.status }
+          : incident,
+      ),
+    );
+  }, []);
+
+  const onDashboardUpdate = useCallback((payload) => {
+    if (payload.incidents) {
+      setIncidents(payload.incidents);
+    }
+  }, []);
+
+  useIncidentWebSocket({
+    enabled: Boolean(import.meta.env.VITE_API_BASE_URL),
+    onDashboardUpdate,
+    onIncidentPatch: patchIncident,
+  });
+
   const severities = ["all", "Critical", "High", "Medium", "Low"];
   const statuses = ["all", "open", "acknowledged", "escalated", "resolved"];
-  const services = ["all", ...new Set(incidents.map((i) => i.service))];
+  const services = ["all", ...new Set(incidents.map((i) => i.service ?? i.source).filter(Boolean))];
 
   const filteredIncidents = incidents.filter((incident) => {
+    const title = (incident.title ?? incident.message ?? "").toLowerCase();
+    const incidentId = String(incident.id ?? incident.incident_id ?? "").toLowerCase();
+
     if (
-      searchTerm &&
-      !incident.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !incident.id.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+      searchTerm
+      && !title.includes(searchTerm.toLowerCase())
+      && !incidentId.includes(searchTerm.toLowerCase())
+    ) {
       return false;
-    if (filters.severity !== "all" && incident.severity !== filters.severity)
+    }
+    if (
+      filters.severity !== "all"
+      && incident.severity?.toLowerCase() !== filters.severity.toLowerCase()
+    ) {
       return false;
-    if (filters.status !== "all" && incident.status !== filters.status)
+    }
+    if (
+      filters.status !== "all"
+      && incident.status?.toLowerCase() !== filters.status.toLowerCase()
+    ) {
       return false;
-    if (filters.service !== "all" && incident.service !== filters.service)
+    }
+    if (
+      filters.service !== "all"
+      && (incident.service ?? incident.source) !== filters.service
+    ) {
       return false;
+    }
     return true;
   });
 
   const activeFilterCount =
-    Object.values(filters).filter((v) => v !== "all").length +
-    (searchTerm ? 1 : 0);
+    Object.values(filters).filter((v) => v !== "all").length
+    + (searchTerm ? 1 : 0);
+
   const clearFilters = () => {
     setFilters({ severity: "all", status: "all", service: "all" });
     setSearchTerm("");
@@ -63,7 +103,7 @@ export default function Incidents() {
       <PageHeader
         eyebrow="Incident Management"
         title="All Incidents"
-        description="View, filter, and manage all incidents across your infrastructure"
+        description="View, filter, and manage all incidents with live escalation countdowns"
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -99,54 +139,38 @@ export default function Incidents() {
           <CardContent className="pt-6">
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Severity
-                </label>
+                <label className="mb-2 block text-sm font-medium">Severity</label>
                 <select
                   value={filters.severity}
-                  onChange={(e) =>
-                    setFilters({ ...filters, severity: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   {severities.map((s) => (
-                    <option key={s} value={s}>
-                      {s === "all" ? "All" : s}
-                    </option>
+                    <option key={s} value={s}>{s === "all" ? "All" : s}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
+                <label className="mb-2 block text-sm font-medium">Status</label>
                 <select
                   value={filters.status}
-                  onChange={(e) =>
-                    setFilters({ ...filters, status: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   {statuses.map((s) => (
-                    <option key={s} value={s}>
-                      {s === "all" ? "All" : s}
-                    </option>
+                    <option key={s} value={s}>{s === "all" ? "All" : s}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Service
-                </label>
+                <label className="mb-2 block text-sm font-medium">Service</label>
                 <select
                   value={filters.service}
-                  onChange={(e) =>
-                    setFilters({ ...filters, service: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ ...filters, service: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   {services.map((s) => (
-                    <option key={s} value={s}>
-                      {s === "all" ? "All" : s}
-                    </option>
+                    <option key={s} value={s}>{s === "all" ? "All" : s}</option>
                   ))}
                 </select>
               </div>
@@ -154,7 +178,7 @@ export default function Incidents() {
             {activeFilterCount > 0 && (
               <button
                 onClick={clearFilters}
-                className="mt-4 text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+                className="mt-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3 w-3" /> Clear all filters
               </button>
@@ -169,7 +193,10 @@ export default function Incidents() {
 
       <div className="space-y-3">
         {filteredIncidents.map((incident) => (
-          <IncidentCard key={incident.id} incident={incident} />
+          <IncidentCard
+            key={incident.incident_id ?? incident.id}
+            incident={incident}
+          />
         ))}
       </div>
 

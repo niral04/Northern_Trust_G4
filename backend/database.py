@@ -23,3 +23,32 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def migrate_schema():
+    """
+    Extend existing SQLite tables with new audit timeline columns (idempotent).
+    """
+    import sqlite3
+
+    conn = sqlite3.connect("./incidents.db")
+    cursor = conn.cursor()
+
+    timeline_columns = [
+        ("actor", "TEXT DEFAULT 'system'"),
+        ("previous_assignee", "TEXT"),
+        ("new_assignee", "TEXT"),
+        ("escalation_level", "INTEGER"),
+        ("event_metadata", "TEXT"),
+    ]
+
+    for column_name, column_type in timeline_columns:
+        try:
+            cursor.execute(
+                f"ALTER TABLE timeline_events ADD COLUMN {column_name} {column_type}"
+            )
+        except sqlite3.OperationalError:
+            pass
+
+    conn.commit()
+    conn.close()

@@ -39,8 +39,13 @@ class Alert(Base):
 class TimelineEvent(Base):
     __tablename__ = "timeline_events"
 
-    id          = Column(Integer, primary_key=True)
-    incident_id = Column(String)
-    event_type  = Column(String)
-    description = Column(Text)
-    created_at  = Column(DateTime, default=datetime.utcnow)
+    id                  = Column(Integer, primary_key=True)
+    incident_id         = Column(String)
+    event_type          = Column(String)
+    description         = Column(Text)
+    actor               = Column(String, default="system")
+    previous_assignee   = Column(String, nullable=True)
+    new_assignee        = Column(String, nullable=True)
+    escalation_level    = Column(Integer, nullable=True)
+    event_metadata      = Column(Text, nullable=True)  # JSON string
+    created_at          = Column(DateTime, default=datetime.utcnow)

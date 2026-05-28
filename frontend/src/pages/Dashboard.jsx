@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Download, RadioTower } from "lucide-react";
 import EventTimeline from "@/components/dashboard/EventTimeline";
@@ -10,9 +10,59 @@ import LoadingState from "@/components/shared/LoadingState";
 import PageHeader from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { getDashboardData } from "@/services/api";
+import { useIncidentWebSocket } from "@/hooks/useIncidentWebSocket";
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const [liveConnected, setLiveConnected] = useState(false);
+
+  const patchIncident = useCallback((incidentId, patch) => {
+    setData((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        incidents: current.incidents.map((incident) =>
+          (incident.id === incidentId || incident.incident_id === incidentId)
+            ? { ...incident, ...patch }
+            : incident,
+        ),
+      };
+    });
+  }, []);
+
+  const onDashboardUpdate = useCallback((payload) => {
+    setLiveConnected(true);
+    if (payload.incidents) {
+      setData((current) => ({
+        incidents: payload.incidents,
+        analytics: current?.analytics ?? {},
+        stats: payload.stats ?? current?.stats ?? {},
+      }));
+    } else if (payload.stats) {
+      setData((current) => ({
+        ...current,
+        stats: { ...current?.stats, ...payload.stats },
+      }));
+    }
+  }, []);
+
+  const onTimelineEvent = useCallback((event) => {
+    setData((current) => {
+      if (!current?.analytics) return current;
+      const timeline = [...(current.analytics.timeline ?? []), event].slice(-20);
+      return {
+        ...current,
+        analytics: { ...current.analytics, timeline },
+      };
+    });
+  }, []);
+
+  useIncidentWebSocket({
+    enabled: Boolean(import.meta.env.VITE_API_BASE_URL),
+    onDashboardUpdate,
+    onIncidentPatch: patchIncident,
+    onTimelineEvent,
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -44,9 +94,9 @@ export default function Dashboard() {
               <Download className="size-4" />
               Export
             </Button>
-            <Button>
+            <Button className={liveConnected ? "bg-emerald-600 hover:bg-emerald-700" : ""}>
               <RadioTower className="size-4" />
-              Stream Live
+              {liveConnected ? "Live Connected" : "Stream Live"}
             </Button>
           </>
         }
@@ -55,7 +105,7 @@ export default function Dashboard() {
       <KpiGrid stats={data.stats} />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.8fr)]">
-        <IncidentFeed incidents={data.incidents} />
+        <IncidentFeed incidents={data.incidents} onIncidentPatch={patchIncident} />
         <div className="grid gap-6">
           <SeverityDonut data={data.analytics.severityDistribution} />
           <EventTimeline events={data.analytics.timeline} />
