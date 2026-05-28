@@ -1,68 +1,31 @@
-import threading
-import time
 from datetime import datetime
 
 from app.core.database import get_conn
-from app.services.notifier import send_notification
 
 
-def auto_escalate(incident_id: int):
+def find_sla_breaches():
+    """Return open incidents whose age is beyond their configured SLA window."""
 
-    def task():
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("""
+    SELECT * FROM incidents
+    WHERE status IN ('OPEN', 'ACKNOWLEDGED', 'ESCALATED')
+    """)
+    rows = [dict(row) for row in c.fetchall()]
+    conn.close()
 
-        print(f"Monitoring Incident {incident_id}")
+    breached = []
+    now = datetime.utcnow()
 
-        # wait 60 seconds
-        time.sleep(60)
+    for incident in rows:
+        try:
+            created_at = datetime.fromisoformat(incident["created_at"])
+        except (TypeError, ValueError):
+            continue
 
-        conn = get_conn()
+        age_minutes = (now - created_at).total_seconds() / 60
+        if age_minutes > (incident.get("sla_minutes") or 60):
+            breached.append(incident)
 
-        c = conn.cursor()
-
-        # Check current incident status
-        c.execute("""
-        SELECT status
-        FROM incidents
-        WHERE id = ?
-        """, (incident_id,))
-
-        row = c.fetchone()
-
-        if row is None:
-
-            conn.close()
-
-            return
-
-        # Only escalate if still OPEN
-        if row["status"] == "OPEN":
-
-            now = datetime.utcnow().isoformat()
-
-            c.execute("""
-            UPDATE incidents
-            SET status = ?,
-                updated_at = ?
-            WHERE id = ?
-            """, (
-                "ESCALATED",
-                now,
-                incident_id
-            ))
-
-            conn.commit()
-
-            send_notification(
-                "EMAIL",
-                f"""
-                INCIDENT AUTO ESCALATED
-
-                Incident ID: {incident_id}
-                """
-            )
-
-            print(f"Incident {incident_id} auto escalated")
-
-        conn.close()
-
-    threading.Thread(target=task).start()
+    return breached

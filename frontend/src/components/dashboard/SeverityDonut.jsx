@@ -10,6 +10,7 @@ const COLORS = {
 
 export default function SeverityDonut({ data }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
+  const percentageBase = total || 1;
 
   return (
     <Card>
@@ -44,7 +45,7 @@ export default function SeverityDonut({ data }) {
                 <span className="size-2 rounded-full" style={{ backgroundColor: COLORS[item.name] }} />
                 {item.name}
               </span>
-              <span className="font-mono text-sm">{Math.round((item.value / total) * 100)}%</span>
+              <span className="font-mono text-sm">{Math.round((item.value / percentageBase) * 100)}%</span>
             </div>
           ))}
         </div>

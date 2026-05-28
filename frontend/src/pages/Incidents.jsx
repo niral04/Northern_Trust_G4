@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Search, Filter, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import IncidentCard from "@/components/dashboard/IncidentCard";
 import LoadingState from "@/components/shared/LoadingState";
 import PageHeader from "@/components/shared/PageHeader";
-import { getIncidents } from "@/services/api";
+import { getIncidents, simulateAlerts } from "@/services/api";
 
 export default function Incidents() {
   const [incidents, setIncidents] = useState([]);
@@ -29,7 +30,7 @@ export default function Incidents() {
   };
 
   const severities = ["all", "Critical", "High", "Medium", "Low"];
-  const statuses = ["all", "open", "acknowledged", "escalated", "resolved"];
+  const statuses = ["all", "Open", "Acknowledged", "Escalated", "Resolved"];
   const services = ["all", ...new Set(incidents.map((i) => i.service))];
 
   const filteredIncidents = incidents.filter((incident) => {
@@ -63,7 +64,18 @@ export default function Incidents() {
       <PageHeader
         eyebrow="Incident Management"
         title="All Incidents"
-        description="View, filter, and manage all incidents across your infrastructure"
+        description="View, filter, and manage all incidents across your infrastructure and application services"
+        actions={
+          <button
+            onClick={async () => {
+              await simulateAlerts();
+              await loadIncidents();
+            }}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Simulate DevOps Alerts
+          </button>
+        }
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -169,7 +181,9 @@ export default function Incidents() {
 
       <div className="space-y-3">
         {filteredIncidents.map((incident) => (
-          <IncidentCard key={incident.id} incident={incident} />
+          <Link key={incident.id} to={`/incidents/${incident.id}`} className="block">
+            <IncidentCard incident={incident} />
+          </Link>
         ))}
       </div>
 

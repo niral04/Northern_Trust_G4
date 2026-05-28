@@ -9,10 +9,11 @@ import SystemHealth from "@/components/dashboard/SystemHealth";
 import LoadingState from "@/components/shared/LoadingState";
 import PageHeader from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { getDashboardData } from "@/services/api";
+import { createAlert, getDashboardData, simulateAlerts } from "@/services/api";
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -28,6 +29,33 @@ export default function Dashboard() {
     };
   }, []);
 
+  const refreshDashboard = async () => {
+    const payload = await getDashboardData();
+    setData(payload);
+  };
+
+  const handleSimulateScenario = async () => {
+    setIsSimulating(true);
+    await simulateAlerts();
+    await refreshDashboard();
+    setIsSimulating(false);
+  };
+
+  const handleCriticalInfra = async () => {
+    setIsSimulating(true);
+    await createAlert({
+      source: "Prometheus",
+      type: "INFRA",
+      severity: "CRITICAL",
+      service: "core-router-01",
+      metric: "host_up",
+      value: "0",
+      message: "Core router is unreachable",
+    });
+    await refreshDashboard();
+    setIsSimulating(false);
+  };
+
   if (!data) {
     return <LoadingState />;
   }
@@ -40,13 +68,13 @@ export default function Dashboard() {
         description="A real-time command center for alert classification, incident routing, escalation, and operational analytics."
         actions={
           <>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleCriticalInfra} disabled={isSimulating}>
               <Download className="size-4" />
-              Export
+              Critical Infra
             </Button>
-            <Button>
+            <Button onClick={handleSimulateScenario} disabled={isSimulating}>
               <RadioTower className="size-4" />
-              Stream Live
+              {isSimulating ? "Simulating..." : "Simulate Alerts"}
             </Button>
           </>
         }

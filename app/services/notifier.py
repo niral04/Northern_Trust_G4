@@ -1,173 +1,50 @@
-import os
-import smtplib
-import requests
+from datetime import datetime
 
-from dotenv import load_dotenv
-
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
-from twilio.rest import Client
+from app.core.database import get_conn
 
 
-# ---------------------------------------------------
-# LOAD ENV VARIABLES
-# ---------------------------------------------------
-load_dotenv()
+def record_notification(incident_id: int, channel: str, recipient: str, message: str):
+    now = datetime.utcnow().isoformat()
+    conn = get_conn()
+    c = conn.cursor()
 
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
-
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
-
-SLACK_WEBHOOK_URL = os.getenv(
-    "SLACK_WEBHOOK_URL",
-    ""
-)
-
-TWILIO_ACCOUNT_SID = os.getenv(
-    "TWILIO_ACCOUNT_SID",
-    ""
-)
-
-TWILIO_AUTH_TOKEN = os.getenv(
-    "TWILIO_AUTH_TOKEN",
-    ""
-)
-
-TWILIO_PHONE_NUMBER = os.getenv(
-    "TWILIO_PHONE_NUMBER",
-    ""
-)
-
-
-# ---------------------------------------------------
-# SEND EMAIL
-# ---------------------------------------------------
-def send_email(
-    subject: str,
-    body: str
-):
-
-    try:
-
-        receivers = [
-            "sahadevkadam923@gmail.com"
-        ]
-
-        msg = MIMEMultipart()
-
-        msg["From"] = EMAIL_ADDRESS
-
-        msg["To"] = ", ".join(receivers)
-
-        msg["Subject"] = subject
-
-        msg.attach(
-            MIMEText(body, "plain")
-        )
-
-        server = smtplib.SMTP(
-            "smtp.gmail.com",
-            587
-        )
-
-        server.starttls()
-
-        server.login(
-            EMAIL_ADDRESS,
-            EMAIL_PASSWORD
-        )
-
-        server.sendmail(
-            EMAIL_ADDRESS,
-            receivers,
-            msg.as_string()
-        )
-
-        server.quit()
-
-        print("Email notifications sent successfully")
-
-    except Exception as e:
-
-        print("Email Error:", e)
-
-
-# ---------------------------------------------------
-# SEND SLACK MESSAGE
-# ---------------------------------------------------
-def send_slack_message(message: str):
-
-    try:
-
-        payload = {
-            "text": message
-        }
-
-        response = requests.post(
-            SLACK_WEBHOOK_URL,
-            json=payload
-        )
-
-        print(
-            "Slack Status:",
-            response.status_code
-        )
-
-    except Exception as e:
-
-        print("Slack Error:", e)
-
-
-# ---------------------------------------------------
-# SEND SMS
-# ---------------------------------------------------
-def send_sms(message: str):
-
-    try:
-
-        client = Client(
-            TWILIO_ACCOUNT_SID,
-            TWILIO_AUTH_TOKEN
-        )
-
-        receivers = [
-            "+919673847622"
-        ]
-
-        for number in receivers:
-
-            client.messages.create(
-                body=message,
-                from_=TWILIO_PHONE_NUMBER,
-                to=number
-            )
-
-        print("SMS alerts sent successfully")
-
-    except Exception as e:
-
-        print("SMS Error:", e)
-
-
-# ---------------------------------------------------
-# MAIN NOTIFICATION FUNCTION
-# ---------------------------------------------------
-def send_notification(
-    channel: str,
-    message: str
-):
-
-    print(f"[{channel}] {message}")
-
-    # EMAIL ALERT
-    send_email(
-        "IMS Incident Alert",
-        message
+    c.execute("""
+    INSERT INTO notifications(
+        incident_id,
+        channel,
+        recipient,
+        status,
+        message,
+        created_at
     )
+    VALUES(?,?,?,?,?,?)
+    """, (
+        incident_id,
+        channel,
+        recipient,
+        "SENT_SIMULATED",
+        message,
+        now,
+    ))
 
-    # SLACK ALERT
-    send_slack_message(message)
+    conn.commit()
+    notification_id = c.lastrowid
+    conn.close()
 
-    # SMS ALERT
-    send_sms(message)
+    return {
+        "id": notification_id,
+        "incident_id": incident_id,
+        "channel": channel,
+        "recipient": recipient,
+        "status": "SENT_SIMULATED",
+        "message": message,
+        "created_at": now,
+    }
+
+
+def send_notification(incident_id: int, channel: str, recipient: str, message: str):
+    """Simulate external notifications for demo readiness without real credentials."""
+
+    notification = record_notification(incident_id, channel, recipient, message)
+    print(f"[{channel}] to {recipient}: {message}")
+    return notification

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import SeverityBadge from "@/components/shared/SeverityBadge";
 import StatusBadge from "@/components/shared/StatusBadge";
 import LoadingState from "@/components/shared/LoadingState";
+import { getIncident, updateIncidentStatus } from "@/services/api";
 
 export default function IncidentDetails() {
   const { id } = useParams();
@@ -17,71 +18,36 @@ export default function IncidentDetails() {
 
   const handleAction = async (action) => {
     try {
-      console.log(`${action} clicked for incident ${id}`);
+      const updatedIncident = await updateIncidentStatus(id, action);
 
-      alert(`${action} action triggered successfully`);
+      if (updatedIncident) {
+        setIncident(updatedIncident);
+      }
     } catch (error) {
       console.error(error);
     }
   };
 
   useEffect(() => {
-    // Mock data - replace with real API later
-    setTimeout(() => {
-      setIncident({
-        id: id,
-        title: "CPU Exhaustion on payment-api",
-        severity: "Critical",
-        status: "open",
-        service: "payment-api",
-        owner: "John Oncall",
-        createdAt: new Date().toISOString(),
-        description: "CPU usage at 98% for 15 minutes",
-        classificationReason: "CPU metric exceeded critical threshold",
+    let mounted = true;
 
-        timeline: [
-          { time: "14:30:05", action: "Alert received", user: "System" },
-          {
-            time: "14:30:06",
-            action: "Classified as Critical",
-            user: "Classifier",
-          },
-          {
-            time: "14:30:07",
-            action: "Slack notification sent",
-            user: "System",
-          },
-          {
-            time: "14:32:15",
-            action: "Incident acknowledged",
-            user: "John Oncall",
-          },
-        ],
+    setLoading(true);
 
-        escalationHistory: [
-          {
-            level: 1,
-            role: "Primary On-call",
-            person: "John Oncall",
-            status: "No response",
-          },
-          {
-            level: 2,
-            role: "Senior Engineer",
-            person: "Sarah Chen",
-            status: "Acknowledged",
-          },
-          {
-            level: 3,
-            role: "Engineering Manager",
-            person: "Mike Johnson",
-            status: "Pending",
-          },
-        ],
+    getIncident(id)
+      .then((payload) => {
+        if (mounted) {
+          setIncident(payload);
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
       });
 
-      setLoading(false);
-    }, 500);
+    return () => {
+      mounted = false;
+    };
   }, [id]);
 
   if (loading) return <LoadingState />;
@@ -211,6 +177,37 @@ export default function IncidentDetails() {
         </CardContent>
       </Card>
 
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Workflow Routing & Automation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="rounded-lg bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground">Priority</p>
+              <p className="mt-1 font-semibold">{incident.priority}</p>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground">Workflow</p>
+              <p className="mt-1 font-semibold">{incident.workflowPath}</p>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground">Notify Via</p>
+              <p className="mt-1 font-semibold">{incident.notificationChannel}</p>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground">SLA</p>
+              <p className="mt-1 font-semibold">{incident.slaMinutes} minutes</p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-lg border border-border p-4">
+            <p className="text-xs text-muted-foreground">Automated remediation / runbook</p>
+            <p className="mt-1 text-sm">{incident.remediationAction}</p>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="border-b">
         <div className="flex gap-4">
           <button
@@ -233,6 +230,17 @@ export default function IncidentDetails() {
             }`}
           >
             ⬆️ Escalation History
+          </button>
+
+          <button
+            onClick={() => setActiveTab("notifications")}
+            className={`pb-3 text-sm font-medium ${
+              activeTab === "notifications"
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground"
+            }`}
+          >
+            📣 Notifications
           </button>
         </div>
       </div>
@@ -311,6 +319,31 @@ export default function IncidentDetails() {
           </CardContent>
         </Card>
       )}
+
+      {activeTab === "notifications" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Log</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(incident.notifications ?? []).length === 0 && (
+                <p className="text-sm text-muted-foreground">No notifications recorded yet.</p>
+              )}
+              {(incident.notifications ?? []).map((notification) => (
+                <div key={notification.id} className="rounded-lg bg-muted/30 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium">{notification.channel} → {notification.recipient}</p>
+                    <span className="text-xs text-muted-foreground">{notification.status}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{notification.message}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
     </div>
   );
 }
