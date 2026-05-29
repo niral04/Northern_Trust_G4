@@ -1,3 +1,4 @@
+from models import Incident, Alert, TimelineEvent, ist_now
 from datetime import datetime
 from sqlalchemy.orm import Session
 from models import Incident, Alert, TimelineEvent
@@ -60,14 +61,16 @@ def create_incident(db: Session, alert: Alert, classification: dict):
     notify(incident, "new")
     return incident
 
+from models import Incident, Alert, TimelineEvent, ist_now
+
 def acknowledge_incident(db: Session, incident_id: str, engineer: str):
     incident = db.query(Incident).filter(
         Incident.incident_id == incident_id
     ).first()
 
-    if incident and incident.status == "OPEN" or incident.status == "ESCALATED":
+    if incident and incident.status in ["OPEN", "ESCALATED"]:
         incident.status          = "ACKNOWLEDGED"
-        incident.acknowledged_at = datetime.utcnow()
+        incident.acknowledged_at = ist_now()              # ← changed
         incident.assignee        = engineer
         db.commit()
 
@@ -89,11 +92,11 @@ def escalate_incident(db: Session, incident_id: str, reason="Manual escalation")
     if next_level >= len(chain):
         next_level = len(chain) - 1
 
-    escalated_to             = chain[next_level]
-    incident.escalation_level = next_level
-    incident.status           = "ESCALATED"
-    incident.assignee         = escalated_to
-    incident.last_escalated_at = datetime.utcnow()
+    escalated_to               = chain[next_level]
+    incident.escalation_level  = next_level
+    incident.status            = "ESCALATED"
+    incident.assignee          = escalated_to
+    incident.last_escalated_at = ist_now()                # ← changed
     db.commit()
 
     add_timeline_event(db, incident_id, "ESCALATED",
@@ -108,32 +111,28 @@ def resolve_incident(db: Session, incident_id: str, notes: str = "Resolved"):
     ).first()
 
     if incident:
-        incident.status          = "RESOLVED"
-        incident.resolved_at     = datetime.utcnow()
+        incident.status           = "RESOLVED"
+        incident.resolved_at      = ist_now()             # ← changed
         incident.resolution_notes = notes
 
         if incident.created_at:
-            diff = datetime.utcnow() - incident.created_at
-            incident.mttr_minutes = int(diff.total_seconds() / 60)
+            diff = ist_now() - incident.created_at        # ← changed
+            incident.mttr_minutes = round(
+                diff.total_seconds() / 60, 2
+            )
 
         db.commit()
 
-        # RESOLVED timeline first
         add_timeline_event(db, incident_id, "RESOLVED",
             f"Resolved — {notes} — MTTR: {incident.mttr_minutes} mins")
 
         notify(incident, "resolved", mttr=incident.mttr_minutes)
 
-        # POSTMORTEM after resolved
         postmortem = generate_postmortem(db, incident_id)
         add_timeline_event(db, incident_id, "POSTMORTEM_GENERATED",
             "Post-mortem report automatically generated")
         print(postmortem)
 
-        add_timeline_event(db, incident_id, "RESOLVED",
-            f"Resolved — {notes} — MTTR: {incident.mttr_minutes} mins")
-
-        notify(incident, "resolved", mttr=incident.mttr_minutes)
     return incident
 def generate_postmortem(db: Session, incident_id: str):
     incident = db.query(Incident).filter(
@@ -193,7 +192,7 @@ REMEDIATION_DURATION = {
 }
 
 # 70 % success rate for demo realism
-SUCCESS_RATE = 0.40
+SUCCESS_RATE = 0.35
 
 
 def _do_remediation(incident_id: str, action: str, db_factory):

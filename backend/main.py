@@ -46,16 +46,21 @@ async def websocket_endpoint(websocket: WebSocket):
 
             from routes.incidents import incident_to_dict
             from routes.incidents import get_stats
-
+            resolved_with_mttr = [i.mttr_minutes for i in incidents_list 
+                      if i.status == "RESOLVED" and i.mttr_minutes is not None]
+ 
             data = {
                 "type": "update",
                 "incidents": [incident_to_dict(i) for i in incidents_list],
+                
                 "stats": {
                     "total":      len(incidents_list),
                     "open":       len([i for i in incidents_list if i.status == "OPEN"]),
                     "escalated":  len([i for i in incidents_list if i.status == "ESCALATED"]),
                     "resolved":   len([i for i in incidents_list if i.status == "RESOLVED"]),
-                    "critical":   len([i for i in incidents_list if i.severity == "critical"])
+                    "critical":   len([i for i in incidents_list if i.severity == "critical"]),
+                    "avg_mttr":   round(sum(resolved_with_mttr) / len(resolved_with_mttr), 2)
+                      if resolved_with_mttr else None
                 }
             }
             db.close()

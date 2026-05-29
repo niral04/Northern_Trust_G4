@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from database import SessionLocal
-from models import Incident
+from models import Incident, ist_now                      # ← add ist_now
 import incident_engine
 
 def check_escalations():
@@ -11,13 +11,13 @@ def check_escalations():
         ).all()
 
         for incident in open_incidents:
-            timeout_mins = incident.escalation_timeout
+            timeout_mins   = incident.escalation_timeout
             reference_time = incident.last_escalated_at or incident.created_at
 
             if not reference_time:
                 continue
 
-            elapsed = datetime.utcnow() - reference_time
+            elapsed      = ist_now() - reference_time     # ← changed
             elapsed_mins = elapsed.total_seconds() / 60
 
             if elapsed_mins >= timeout_mins:
