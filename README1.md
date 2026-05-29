@@ -110,7 +110,6 @@ incident-management/
 
 ### Prerequisites
 - Python 3.10+
-- Node.js 18+
 - npm 9+
 
 ### 1. Backend
