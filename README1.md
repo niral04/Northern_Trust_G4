@@ -24,7 +24,7 @@ A real-time event-driven incident management platform built for DevOps environme
 | WebSockets | Real-time dashboard updates |
 | Slack Webhook | Infrastructure notifications |
 | Gmail SMTP | Application notifications |
-| Twilio SMS | Critical incident SMS alerts |
+
 
 ### Frontend
 | Technology | Purpose |
@@ -83,7 +83,7 @@ incident-management/
 - ⏱️ MTTR (Mean Time To Resolve) tracking
 
 ### Notifications
-- 🔴 Infrastructure incidents → **Slack** (immediate) + **SMS** (critical only)
+- 🔴 Infrastructure incidents → **Slack** (immediate) 
 - 🟡 Application incidents → **Email**
 - 🔺 Escalation notifications to next person in chain
 
