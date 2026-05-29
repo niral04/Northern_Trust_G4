@@ -156,10 +156,7 @@ SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
 EMAIL_SENDER=yourapp@gmail.com
 EMAIL_PASSWORD=your-gmail-app-password
 EMAIL_RECEIVER=oncall@company.com
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
-TWILIO_TO_NUMBER=+91xxxxxxxxxx
+
 ```
 
 ---
@@ -197,7 +194,6 @@ TWILIO_TO_NUMBER=+91xxxxxxxxxx
 ### 🔴 Infrastructure (High Priority)
 - Server down, network failure, high CPU, disk full
 - Notified via **Slack** immediately
-- **SMS** sent for critical severity
 - Escalates every **5 minutes**
 - Dashboard shows in **RED**
 
