@@ -1,6 +1,3 @@
-Here's the complete `README.md` file:
-
-````markdown
 # 🚨 Incident Management System
 
 A real-time event-driven incident management platform built for DevOps environments. Automatically detects, classifies, escalates, and resolves infrastructure and application incidents with live dashboard updates.
@@ -156,7 +153,6 @@ SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
 EMAIL_SENDER=yourapp@gmail.com
 EMAIL_PASSWORD=your-gmail-app-password
 EMAIL_RECEIVER=oncall@company.com
-
 ```
 
 ---
@@ -202,5 +198,3 @@ EMAIL_RECEIVER=oncall@company.com
 - Notified via **Email**
 - Escalates every **20 minutes**
 - Dashboard shows in **YELLOW**
-````
-
