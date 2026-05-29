@@ -64,14 +64,14 @@ def classify_alert(alert_type, metric, value, message):
                 return {
                     "severity": "high",
                     "assignee": "App Support Team",
-                    "notify_channel": "slack",
+                    "notify_channel": "email",
                     "escalation_timeout": 20
                 }
             elif rate >= 20:
                 return {
                     "severity": "medium",
                     "assignee": "App Support Team",
-                    "notify_channel": "slack",
+                    "notify_channel": "email",
                     "escalation_timeout": 30
                 }
 
@@ -81,7 +81,7 @@ def classify_alert(alert_type, metric, value, message):
                 return {
                     "severity": "medium",
                     "assignee": "App Support Team",
-                    "notify_channel": "slack",
+                    "notify_channel": "email",
                     "escalation_timeout": 30
                 }
 
@@ -89,13 +89,13 @@ def classify_alert(alert_type, metric, value, message):
             return {
                 "severity": "medium",
                 "assignee": "App Support Team",
-                "notify_channel": "slack",
+                "notify_channel": "email",
                 "escalation_timeout": 30
             }
 
         return {
             "severity": "low",
             "assignee": "App Support Team",
-            "notify_channel": "slack",
+            "notify_channel": "email",
             "escalation_timeout": 60
         }
