@@ -104,7 +104,7 @@ def timeline_to_dict(event: TimelineEvent):
         "event_type": event.event_type,
         "description": event.description,
         "actor": event.actor or "system",
-        "timestamp": event.created_at.isoformat() if event.created_at else None,
+        "timestamp": (event.created_at.isoformat() + "Z") if event.created_at else None,
         "time": event.created_at.strftime("%H:%M:%S") if event.created_at else None,
         "previous_assignee": event.previous_assignee,
         "new_assignee": event.new_assignee,
@@ -163,10 +163,10 @@ def incident_to_dict(incident):
         "escalation_timeout_seconds": timing["escalation_timeout_seconds"],
         "elapsed_seconds":   timing["elapsed_seconds"],
         "remaining_seconds": timing["remaining_seconds"],
-        "created_at":        str(incident.created_at),
-        "createdAt":         str(incident.created_at),
-        "acknowledged_at":   str(incident.acknowledged_at) if incident.acknowledged_at else None,
-        "resolved_at":       str(incident.resolved_at) if incident.resolved_at else None,
+        "created_at":        (incident.created_at.isoformat() + "Z") if incident.created_at else None,
+        "createdAt":         (incident.created_at.isoformat() + "Z") if incident.created_at else None,
+        "acknowledged_at":   (incident.acknowledged_at.isoformat() + "Z") if incident.acknowledged_at else None,
+        "resolved_at":       (incident.resolved_at.isoformat() + "Z") if incident.resolved_at else None,
         "mttr_minutes":      incident.mttr_minutes,
     }
 
